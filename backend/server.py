@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import products_dao
 from sql_conn import get_sql_connection
 
 app = Flask(__name__)
+CORS(app)
 
 connection = get_sql_connection()
 
@@ -16,8 +18,13 @@ def home():
 def get_products():
     products = products_dao.get_all_products(connection)
     response = jsonify(products)
-    response.headers.add('Access-Control-Allow-Origin', '*')
     return response
+
+@app.route('/products/<int:product_id>', methods=['DELETE']) 
+def delete_product(product_id):
+    products_dao.delete_order_details_by_product(connection, product_id) 
+    products_dao.delete_product(connection, product_id) 
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     print("Starting server...")

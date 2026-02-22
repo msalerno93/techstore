@@ -8,12 +8,14 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
-type Product = {
-  id: number;
+export type Product = {
+  product_id: number;
   name: string;
-  price: string;
-  unit: string;
+  unit_id: number;
+  price_per_unit: number;
+  unit_name: string;
 };
+
 
 interface EditModalProps {
   open: boolean;
@@ -29,10 +31,11 @@ export default function EditModal({
   onSave,
 }: EditModalProps) {
   const [formData, setFormData] = useState<Product>({
-    id: 0,
+    product_id: 0,
     name: "",
-    price: "",
-    unit: "",
+    price_per_unit: 0,
+    unit_id: 0,
+    unit_name: "",
   });
 
   // Load product into form when modal opens
@@ -63,17 +66,10 @@ export default function EditModal({
           label="Price"
           fullWidth
           margin="normal"
-          value={formData.price}
-          onChange={(e) => handleChange("price", e.target.value)}
+          value={formData.price_per_unit}
+          onChange={(e) => handleChange("price_per_unit", e.target.value)}
         />
 
-        <TextField
-          label="Unit"
-          fullWidth
-          margin="normal"
-          value={formData.unit}
-          onChange={(e) => handleChange("unit", e.target.value)}
-        />
       </DialogContent>
 
       <DialogActions>

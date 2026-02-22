@@ -17,12 +17,14 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import EditModal from "../../components/modals/EditModal";
+import type { Product } from "../../components/modals/EditModal";
 import AddModal from "../../components/modals/AddModal";
 
-type Product = { id: number; name: string; price: string; unit: string };
+import { getAllProducts } from "../../requests/GetAllProducts";
+import { deleteProduct } from "../../requests/DeleteProduct";
 
 export default function ProductsPage() {
   const [openAdd, setOpenAdd] = useState(false);
@@ -32,12 +34,21 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  // Dummy data for now
-  const products = [
-    { id: 1, name: "Wireless Mouse", price: "$25.00", unit: "Each" },
-    { id: 2, name: "Mechanical Keyboard", price: "$89.99", unit: "Each" },
-    { id: 3, name: "USB-C Cable", price: "$9.99", unit: "Each" },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+
+  // Load products from backend
+  const fetchProducts = async () => {
+    try {
+      const data = await getAllProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error("Failed to load products:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
@@ -79,7 +90,7 @@ export default function ProductsPage() {
         Add Product
       </Button>
 
-      {/* Table */}
+      {/* Products Table */}
       <TableContainer
         component={Paper}
         sx={{
@@ -102,11 +113,11 @@ export default function ProductsPage() {
 
           <TableBody>
             {products.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.id}</TableCell>
+              <TableRow key={p.product_id}>
+                <TableCell>{p.product_id}</TableCell>
                 <TableCell>{p.name}</TableCell>
-                <TableCell>{p.price}</TableCell>
-                <TableCell>{p.unit}</TableCell>
+                <TableCell>${p.price_per_unit}</TableCell>
+                <TableCell>{p.unit_name}</TableCell>
 
                 <TableCell align="right">
                   <IconButton onClick={() => handleEditClick(p)}>
@@ -135,6 +146,7 @@ export default function ProductsPage() {
         onSave={(newProduct) => {
           console.log("Add product:", newProduct);
           setOpenAdd(false);
+          fetchProducts(); // refresh list after adding
         }}
       />
 
@@ -146,28 +158,70 @@ export default function ProductsPage() {
         onSave={(updatedProduct) => {
           console.log("Updated product:", updatedProduct);
           setOpenEdit(false);
+          fetchProducts(); // refresh list after editing
         }}
       />
 
       {/* Delete Modal */}
       <Dialog open={openDelete} onClose={() => setOpenDelete(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ textAlign: "center", fontWeight: "bold", color: "#0a2a43" }}>
+        <DialogTitle
+          sx={{
+            fontWeight: "bold",
+            color: "#0a2a43",
+            textAlign: "center",
+          }}
+        >
           Are you sure?
         </DialogTitle>
 
-        <DialogContent sx={{ textAlign: "center", color: "#0a2a43" }}>
+        <DialogContent
+          sx={{
+            textAlign: "center",
+            fontSize: "1.1rem",
+            color: "#0a2a43",
+            pb: 1,
+          }}
+        >
           Are you sure you want to delete this product?
         </DialogContent>
 
-        <DialogActions sx={{ justifyContent: "center" }}>
-          <Button onClick={() => setOpenDelete(false)}>Cancel</Button>
+        <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+          <Button
+            onClick={() => setOpenDelete(false)}
+            sx={{
+              fontWeight: "bold",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              color: "#0a2a43",
+            }}
+          >
+            Cancel
+          </Button>
 
           <Button
             variant="contained"
-            sx={{ backgroundColor: "#920305" }}
-            onClick={() => {
-              console.log("Deleting product:", productToDelete);
-              setOpenDelete(false);
+            sx={{
+              backgroundColor: "#920305",
+              fontWeight: "bold",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              "&:hover": {
+                backgroundColor: "#ad0909",
+              },
+            }}
+            onClick={async () => {
+              if (!productToDelete) return;
+
+              try {
+                await deleteProduct(productToDelete.product_id);
+                console.log("Deleted product:", productToDelete.product_id);
+                setOpenDelete(false);
+                fetchProducts(); // refresh list after deleting
+              } catch (error) {
+                console.error("Failed to delete product:", error);
+              }
             }}
           >
             Delete
